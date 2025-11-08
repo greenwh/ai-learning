@@ -365,11 +365,12 @@ Evaluate their understanding."""
                     score_text = parts[0].replace("SCORE:", "").strip()
                     score = float(score_text)
                     feedback = parts[1].strip()
-                except:
+                except ValueError:
+                    # If parsing fails, keep defaults
                     pass
 
         return {
-            "score": score,
+            "comprehension_score": score,
             "feedback": feedback,
-            "passed": score >= 0.6
+            "understood": score >= 0.6
         }

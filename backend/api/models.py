@@ -108,9 +108,9 @@ class ComprehensionAnswer(BaseModel):
 
 
 class ComprehensionEvaluation(BaseModel):
-    score: float
+    comprehension_score: float
     feedback: str
-    passed: bool
+    understood: bool
 
 
 # Progress
