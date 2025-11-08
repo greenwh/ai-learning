@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { dynamicAPI, ConversationMessage, AssessmentResponse } from '../services/api';
+import { dynamicAPI, ConversationMessage, AssessmentResponse, contentAPI, Module } from '../services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -14,6 +14,24 @@ export default function Dashboard() {
   const [userAnswer, setUserAnswer] = useState('');
   const [assessment, setAssessment] = useState<AssessmentResponse | null>(null);
   const [isCreatingModule, setIsCreatingModule] = useState(false);
+  const [availableModules, setAvailableModules] = useState<Module[]>([]);
+  const [isLoadingModules, setIsLoadingModules] = useState(true);
+
+  // Load available modules on component mount
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const modules = await contentAPI.listModules();
+        setAvailableModules(modules);
+      } catch (error) {
+        console.error('Error loading modules:', error);
+      } finally {
+        setIsLoadingModules(false);
+      }
+    };
+
+    loadModules();
+  }, []);
 
   const handleStartLearning = async () => {
     if (!subject.trim() || !user) return;
@@ -123,14 +141,54 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Available Modules Section */}
+        {!isAssessing && availableModules.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              📚 Available Learning Modules
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Start learning from our curated modules
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {availableModules.map((module) => (
+                <div
+                  key={module.module_id}
+                  className="border border-gray-200 rounded-lg p-5 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => navigate(`/learn/${module.module_id}`)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 text-lg flex-1">
+                      {module.title}
+                    </h3>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
+                      Level {module.difficulty_level}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-3">
+                    {module.description}
+                  </p>
+
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>⏱️ {module.estimated_time} min</span>
+                    <span className="text-blue-600 font-medium">Start Learning →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         {!isAssessing && (
           <div className="bg-white rounded-lg shadow-lg p-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Learn About Anything
+              🎯 Learn About Anything
             </h2>
             <p className="text-gray-600 mb-6">
-              Type what you want to learn, and I'll assess your current knowledge
+              Or type what you want to learn, and I'll assess your current knowledge
               and create a personalized lesson just for you.
             </p>
 
