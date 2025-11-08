@@ -243,11 +243,15 @@ class AIProviderManager:
         # Add current user prompt
         messages.append({"role": "user", "content": user_prompt})
 
-        # Newer models use max_completion_tokens instead of max_tokens
-        # Models like o1, o3, gpt-4o (2024-08-06 and later) use the new parameter
-        uses_new_api = any(model_name in self.openai_model.lower() for model_name in [
-            'o1', 'o3', 'gpt-5', '2024-08-06', '2024-11-20'
-        ])
+        # Only o1 and o3 series models use max_completion_tokens
+        # All other models (including gpt-4, gpt-5, etc.) use max_tokens
+        model_lower = self.openai_model.lower()
+        uses_new_api = (
+            model_lower.startswith('o1-') or
+            model_lower.startswith('o3-') or
+            model_lower == 'o1' or
+            model_lower == 'o3'
+        )
 
         kwargs = {
             "model": self.openai_model,
