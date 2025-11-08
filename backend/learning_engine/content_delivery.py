@@ -8,11 +8,11 @@ from datetime import datetime
 
 from backend.database.models import (
     Module, ModuleProgress, LearningSession,
-    EngagementSignal
+    EngagementSignal, UserSettings
 )
 from backend.ai import (
     ai_provider_manager, TaskType, get_content_template,
-    LearningModality
+    LearningModality, AIProvider
 )
 from backend.learning_engine.style_engine import StyleEngine
 
@@ -69,8 +69,23 @@ class ContentDeliveryEngine:
         # Create user prompt
         user_prompt = self._create_user_prompt(module, user_context)
 
+        # Get user's preferred provider from settings
+        user_settings = self.db.query(UserSettings).filter(
+            UserSettings.user_id == user_id
+        ).first()
+
+        preferred_provider = None
+        if user_settings and user_settings.preferred_provider:
+            try:
+                preferred_provider = AIProvider(user_settings.preferred_provider)
+            except ValueError:
+                pass  # Invalid provider value, will use default
+
         # Select AI provider and generate
-        provider = ai_provider_manager.select_provider(TaskType.CONTENT_GENERATION)
+        provider = ai_provider_manager.select_provider(
+            TaskType.CONTENT_GENERATION,
+            user_preference=preferred_provider
+        )
         content = await ai_provider_manager.generate_content(
             provider=provider,
             system_prompt=system_prompt,

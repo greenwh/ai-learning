@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from backend.database.models import (
-    LearningSession, ChatMessage, Module, LearningProfile
+    LearningSession, ChatMessage, Module, LearningProfile, UserSettings
 )
-from backend.ai import ai_provider_manager, TaskType
+from backend.ai import ai_provider_manager, TaskType, AIProvider
 
 
 class TutorEngine:
@@ -58,8 +58,23 @@ class TutorEngine:
         self.db.add(user_msg)
         self.db.commit()
 
+        # Get user's preferred provider from settings
+        user_settings = self.db.query(UserSettings).filter(
+            UserSettings.user_id == session.user_id
+        ).first()
+
+        preferred_provider = None
+        if user_settings and user_settings.preferred_provider:
+            try:
+                preferred_provider = AIProvider(user_settings.preferred_provider)
+            except ValueError:
+                pass  # Invalid provider value, will use default
+
         # Generate AI response
-        provider = ai_provider_manager.select_provider(TaskType.TUTOR_RESPONSE)
+        provider = ai_provider_manager.select_provider(
+            TaskType.TUTOR_RESPONSE,
+            user_preference=preferred_provider
+        )
 
         # Prepare conversation history for AI
         messages = [
@@ -207,21 +222,38 @@ Create a question that:
 3. Can be answered in their own words
 4. Has multiple acceptable answer types
 
-Format your response as a natural question, like:
-"So, if you were explaining this to a friend, how would you describe...?"
-"What do you think is the main reason why...?"
-"If you saw [scenario], what might that tell you?"
+CRITICAL: Return ONLY the question text itself. No markdown, no explanations, no reasoning, no formatting.
 
-Keep it casual and encouraging."""
+Good examples:
+- "So, if you were explaining this to a friend, how would you describe why P/E ratios matter?"
+- "What do you think is the main reason why companies report earnings quarterly?"
+- "If you saw a company with high revenue but negative cash flow, what might that tell you?"
+
+Keep it casual and encouraging. Just the question, nothing else."""
 
         user_prompt = f"""Generate a comprehension check question for a lesson on: {module.title if module else 'stock fundamentals'}
 
 The lesson objectives were:
 {chr(10).join(f"- {obj}" for obj in (module.learning_objectives if module else ['Understanding basics']))}
 
-Generate one conversational question that checks if they understood the core concept."""
+Return ONLY the question text - no markdown, no headers, no reasoning, no extra formatting. Just a single conversational question."""
 
-        provider = ai_provider_manager.select_provider(TaskType.QUICK_QA)
+        # Get user's preferred provider from settings
+        user_settings = self.db.query(UserSettings).filter(
+            UserSettings.user_id == session.user_id
+        ).first()
+
+        preferred_provider = None
+        if user_settings and user_settings.preferred_provider:
+            try:
+                preferred_provider = AIProvider(user_settings.preferred_provider)
+            except ValueError:
+                pass  # Invalid provider value, will use default
+
+        provider = ai_provider_manager.select_provider(
+            TaskType.QUICK_QA,
+            user_preference=preferred_provider
+        )
         question = await ai_provider_manager.generate_content(
             provider=provider,
             system_prompt=system_prompt,
@@ -230,8 +262,23 @@ Generate one conversational question that checks if they understood the core con
             temperature=0.8
         )
 
+        # Clean up any markdown or extra formatting that might have slipped through
+        import re
+        question = question.strip()
+        # Remove markdown headers
+        question = re.sub(r'^#+\s+', '', question, flags=re.MULTILINE)
+        # Remove bold/italic markers
+        question = re.sub(r'\*\*([^*]+)\*\*', r'\1', question)
+        question = re.sub(r'\*([^*]+)\*', r'\1', question)
+        # Remove any "---" dividers
+        question = re.sub(r'-{3,}', '', question)
+        # Take only the first line if there are multiple paragraphs
+        question = question.split('\n\n')[0].strip()
+        # Remove any quotes that wrap the whole question
+        question = question.strip('"').strip("'").strip()
+
         return {
-            "question": question.strip(),
+            "question": question,
             "session_id": session_id,
             "type": "conversational"
         }
@@ -283,7 +330,22 @@ FEEDBACK: [Your encouraging feedback and corrections]"""
 
 Evaluate their understanding."""
 
-        provider = ai_provider_manager.select_provider(TaskType.QUICK_QA)
+        # Get user's preferred provider from settings
+        user_settings = self.db.query(UserSettings).filter(
+            UserSettings.user_id == session.user_id
+        ).first()
+
+        preferred_provider = None
+        if user_settings and user_settings.preferred_provider:
+            try:
+                preferred_provider = AIProvider(user_settings.preferred_provider)
+            except ValueError:
+                pass  # Invalid provider value, will use default
+
+        provider = ai_provider_manager.select_provider(
+            TaskType.QUICK_QA,
+            user_preference=preferred_provider
+        )
         evaluation = await ai_provider_manager.generate_content(
             provider=provider,
             system_prompt=system_prompt,

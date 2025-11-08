@@ -80,40 +80,48 @@ class AIProviderManager:
             The selected AI provider
         """
         if user_preference and self._is_provider_available(user_preference):
+            print(f"🤖 [AI Provider] Using user preference: {user_preference.value}")
             return user_preference
 
         # Task-based provider selection
+        selected_provider = None
+
         if task_type == TaskType.CONTENT_GENERATION:
             # Claude excels at educational content
             if self.anthropic_client:
-                return AIProvider.ANTHROPIC
+                selected_provider = AIProvider.ANTHROPIC
 
         elif task_type == TaskType.QUICK_QA:
             # Fast models for rapid Q&A
             if self.openai_client:
-                return AIProvider.OPENAI
+                selected_provider = AIProvider.OPENAI
 
         elif task_type == TaskType.VISUAL_DESCRIPTION:
             # Gemini good at visual reasoning
             if self.google_configured:
-                return AIProvider.GOOGLE
+                selected_provider = AIProvider.GOOGLE
 
         elif task_type == TaskType.TUTOR_RESPONSE:
             # Claude for conversational tutoring
             if self.anthropic_client:
-                return AIProvider.ANTHROPIC
+                selected_provider = AIProvider.ANTHROPIC
 
-        # Fallback to first available provider
-        if self.anthropic_client:
-            return AIProvider.ANTHROPIC
-        elif self.openai_client:
-            return AIProvider.OPENAI
-        elif self.xai_client:
-            return AIProvider.XAI
-        elif self.google_configured:
-            return AIProvider.GOOGLE
+        # Fallback to first available provider if no task-specific selection made
+        if not selected_provider:
+            if self.anthropic_client:
+                selected_provider = AIProvider.ANTHROPIC
+            elif self.openai_client:
+                selected_provider = AIProvider.OPENAI
+            elif self.xai_client:
+                selected_provider = AIProvider.XAI
+            elif self.google_configured:
+                selected_provider = AIProvider.GOOGLE
 
-        raise ValueError("No AI provider configured")
+        if not selected_provider:
+            raise ValueError("No AI provider configured")
+
+        print(f"🤖 [AI Provider] Selected {selected_provider.value} for {task_type.value}")
+        return selected_provider
 
     def _is_provider_available(self, provider: AIProvider) -> bool:
         """Check if a provider is available"""
@@ -150,6 +158,19 @@ class AIProviderManager:
         Returns:
             Generated content as string
         """
+        # Get model name for logging
+        model_name = "unknown"
+        if provider == AIProvider.ANTHROPIC:
+            model_name = self.anthropic_model
+        elif provider == AIProvider.OPENAI:
+            model_name = self.openai_model
+        elif provider == AIProvider.GOOGLE:
+            model_name = self.google_model
+        elif provider == AIProvider.XAI:
+            model_name = self.xai_model
+
+        print(f"📤 [AI API Call] Sending to {provider.value} ({model_name})")
+
         try:
             if provider == AIProvider.ANTHROPIC:
                 return await self._generate_anthropic(
@@ -175,7 +196,7 @@ class AIProviderManager:
                 raise ValueError(f"Unknown provider: {provider}")
 
         except Exception as e:
-            print(f"Error generating content with {provider}: {e}")
+            print(f"❌ [AI API Error] Error with {provider.value} ({model_name}): {e}")
             # Try fallback provider
             return await self._generate_with_fallback(
                 provider, system_prompt, user_prompt,
