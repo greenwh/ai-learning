@@ -4,7 +4,9 @@ An adaptive learning platform that **discovers how you learn best** while teachi
 
 ## 🌟 Key Features
 
+### Core Learning System
 - **Learning Style Discovery**: Doesn't assume—actively discovers through experimentation using multi-armed bandit algorithms
+- **Free-Form Learning**: Type any subject, AI assesses your knowledge and creates personalized content
 - **Adaptive Content Generation**: AI creates content in real-time tailored to your learning style
 - **4 Teaching Modalities**:
   - Narrative/Story-based
@@ -14,6 +16,17 @@ An adaptive learning platform that **discovers how you learn best** while teachi
 - **Conversational AI Tutor**: Learn through dialogue, not passive consumption
 - **Evidence-Based Adaptation**: Tracks retention and engagement to optimize delivery
 - **Multi-AI Provider Support**: Claude (Anthropic), GPT-4 (OpenAI), Gemini (Google)
+
+### Enhanced Features
+- **Spaced Repetition**: Scientifically-proven retention testing at optimal intervals (24h, 3d, 7d, 14d, 30d)
+- **Smart Recommendations**: AI suggests what to learn next based on your style and progress
+- **Learning Streaks**: Track daily consistency and build learning habits
+- **Achievements**: Unlock milestones for sessions, modules, and time spent
+- **Learning Analytics**: Retention rates, concept mastery, and performance insights
+- **Quick Reviews**: 2-minute refreshers on concepts you've learned
+- **Backup & Export**: Protect your data and migrate between machines
+
+📖 **See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) for complete details**
 
 ## 🏗️ Architecture
 
