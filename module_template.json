@@ -1,0 +1,51 @@
+{
+  "domain": "Finance",
+  "subject": "Stock Market Investing",
+  "topic": "Your Topic Here",
+  "title": "Your Module Title: Subtitle",
+  "description": "Brief description of what students will learn. 2-3 sentences explaining the value and outcomes.",
+  "prerequisites": [],
+  "learning_objectives": [
+    "Explain the core concept in their own words",
+    "Calculate or apply the concept to real examples",
+    "Identify when to use this knowledge",
+    "Recognize common mistakes or misconceptions"
+  ],
+  "difficulty_level": 1,
+  "estimated_time": 15,
+  "content_config": {
+    "modalities": {
+      "narrative_story": {
+        "enabled": true,
+        "theme": "real_world_story_or_analogy",
+        "context": "Optional: Additional context for AI"
+      },
+      "interactive_hands_on": {
+        "enabled": true,
+        "type": "hands_on_exercise",
+        "data_source": "real_examples",
+        "context": "Optional: What kind of interaction"
+      },
+      "socratic_dialogue": {
+        "enabled": true,
+        "starting_question": "What do you think about [topic]?"
+      },
+      "visual_diagrams": {
+        "enabled": true,
+        "metaphor": "simple_visual_analogy",
+        "context": "Optional: Specific visual approach"
+      }
+    },
+    "key_concepts": [
+      "concept_1_lowercase_with_underscores",
+      "concept_2_lowercase_with_underscores",
+      "concept_3_lowercase_with_underscores"
+    ],
+    "real_world_examples": [
+      "Example 1: Real company or scenario",
+      "Example 2: Another relevant example",
+      "Example 3: Contrasting example"
+    ]
+  },
+  "version": "1.0"
+}
