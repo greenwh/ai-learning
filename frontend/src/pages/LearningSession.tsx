@@ -12,8 +12,19 @@ export default function LearningSession() {
   const [isLoading, setIsLoading] = useState(true);
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
-  const [comprehensionScore, setComprehensionScore] = useState(0.8);
+  const [comprehensionScore, setComprehensionScore] = useState<number | null>(null);
   const [engagementScore, setEngagementScore] = useState(0.8);
+
+  // Comprehension check state
+  const [showComprehensionCheck, setShowComprehensionCheck] = useState(false);
+  const [comprehensionQuestion, setComprehensionQuestion] = useState('');
+  const [comprehensionAnswer, setComprehensionAnswer] = useState('');
+  const [comprehensionFeedback, setComprehensionFeedback] = useState<{
+    correct: boolean;
+    score: number;
+    feedback: string;
+  } | null>(null);
+  const [isLoadingCheck, setIsLoadingCheck] = useState(false);
 
   useEffect(() => {
     if (moduleId && user) {
@@ -56,13 +67,64 @@ export default function LearningSession() {
     }
   };
 
+  const handleStartComprehensionCheck = async () => {
+    if (!currentSession) return;
+
+    setIsLoadingCheck(true);
+    setShowComprehensionCheck(true);
+    setComprehensionFeedback(null);
+    setComprehensionAnswer('');
+
+    try {
+      const result = await chatAPI.getComprehensionCheck(currentSession.session_id);
+      setComprehensionQuestion(result.question);
+    } catch (error) {
+      console.error('Error getting comprehension check:', error);
+      alert('Error generating comprehension check');
+      setShowComprehensionCheck(false);
+    } finally {
+      setIsLoadingCheck(false);
+    }
+  };
+
+  const handleSubmitAnswer = async () => {
+    if (!comprehensionAnswer.trim() || !currentSession) return;
+
+    setIsLoadingCheck(true);
+    try {
+      const result = await chatAPI.evaluateComprehension(
+        currentSession.session_id,
+        comprehensionAnswer
+      );
+      setComprehensionFeedback({
+        correct: result.understood,
+        score: result.comprehension_score,
+        feedback: result.feedback,
+      });
+      setComprehensionScore(result.comprehension_score);
+    } catch (error) {
+      console.error('Error evaluating answer:', error);
+      alert('Error evaluating your answer');
+    } finally {
+      setIsLoadingCheck(false);
+    }
+  };
+
   const handleComplete = async () => {
     if (!currentSession) return;
+
+    // If they haven't taken the comprehension check, warn them
+    if (comprehensionScore === null) {
+      const confirmed = window.confirm(
+        'You haven\'t taken the comprehension check yet. Are you sure you want to complete without checking your understanding?'
+      );
+      if (!confirmed) return;
+    }
 
     try {
       await sessionAPI.completeSession(
         currentSession.session_id,
-        comprehensionScore,
+        comprehensionScore || 0.5, // Default to 0.5 if they skipped the check
         engagementScore
       );
       navigate('/dashboard');
@@ -217,13 +279,111 @@ export default function LearningSession() {
               </div>
             </div>
 
+            {/* Comprehension Check */}
+            {!showComprehensionCheck && (
+              <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  Check Your Understanding
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {comprehensionScore !== null
+                    ? `Score: ${Math.round(comprehensionScore * 100)}%`
+                    : 'Test your comprehension with a quick question'}
+                </p>
+                <button
+                  onClick={handleStartComprehensionCheck}
+                  className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition-colors"
+                  disabled={isLoadingCheck}
+                >
+                  {comprehensionScore !== null ? 'Retake Check' : 'Start Comprehension Check'}
+                </button>
+              </div>
+            )}
+
+            {/* Comprehension Check Question */}
+            {showComprehensionCheck && (
+              <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  Comprehension Check
+                </h3>
+
+                {isLoadingCheck && !comprehensionQuestion && (
+                  <div className="text-sm text-gray-500 text-center py-4">
+                    Generating question...
+                  </div>
+                )}
+
+                {comprehensionQuestion && !comprehensionFeedback && (
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
+                      {comprehensionQuestion}
+                    </div>
+                    <textarea
+                      value={comprehensionAnswer}
+                      onChange={(e) => setComprehensionAnswer(e.target.value)}
+                      placeholder="Type your answer here..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                      rows={4}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSubmitAnswer}
+                        disabled={!comprehensionAnswer.trim() || isLoadingCheck}
+                        className="flex-1 bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition-colors text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {isLoadingCheck ? 'Evaluating...' : 'Submit Answer'}
+                      </button>
+                      <button
+                        onClick={() => setShowComprehensionCheck(false)}
+                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {comprehensionFeedback && (
+                  <div className="space-y-4">
+                    <div
+                      className={`p-4 rounded-lg ${
+                        comprehensionFeedback.correct
+                          ? 'bg-green-50 border border-green-200'
+                          : 'bg-yellow-50 border border-yellow-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">
+                          {comprehensionFeedback.correct ? '✓' : '⚠️'}
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          Score: {Math.round(comprehensionFeedback.score * 100)}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        {comprehensionFeedback.feedback}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowComprehensionCheck(false)}
+                      className="w-full bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Complete Session */}
             <div className="bg-white rounded-lg shadow-md p-6 mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">
                 Finish Lesson
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                How well did you understand this lesson?
+                {comprehensionScore !== null
+                  ? 'Ready to complete this lesson?'
+                  : 'Complete the comprehension check before finishing, or skip it.'}
               </p>
               <button
                 onClick={handleComplete}

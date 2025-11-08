@@ -125,9 +125,9 @@ class TutorEngine:
         lesson_content = ""
         if session.session_context and 'generated_content' in session.session_context:
             lesson_content = session.session_context['generated_content']
-            # Truncate if too long (keep first 1500 chars for context)
-            if len(lesson_content) > 1500:
-                lesson_content = lesson_content[:1500] + "..."
+            # Truncate if too long (keep first 4000 chars for context)
+            if len(lesson_content) > 4000:
+                lesson_content = lesson_content[:4000] + "...\n\n[Content truncated for context window]"
 
         # Build system prompt
         prompt = f"""You are an expert tutor helping someone learn about {module.title if module else 'investing'}.
