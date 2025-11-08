@@ -3,5 +3,14 @@ from .style_engine import StyleEngine
 from .content_delivery import ContentDeliveryEngine
 from .tutor_engine import TutorEngine
 from .dynamic_subject import DynamicSubjectEngine
+from .spaced_repetition import SpacedRepetitionEngine
+from .recommendations import RecommendationEngine
 
-__all__ = ["StyleEngine", "ContentDeliveryEngine", "TutorEngine", "DynamicSubjectEngine"]
+__all__ = [
+    "StyleEngine",
+    "ContentDeliveryEngine",
+    "TutorEngine",
+    "DynamicSubjectEngine",
+    "SpacedRepetitionEngine",
+    "RecommendationEngine"
+]
