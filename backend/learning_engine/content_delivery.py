@@ -88,7 +88,8 @@ class ContentDeliveryEngine:
                 "modality": modality.value,
                 "selection_reason": selection_reason,
                 "learning_objectives": module.learning_objectives,
-                "user_context": user_context
+                "user_context": user_context,
+                "generated_content": content  # Store generated content for tutor context
             }
         )
         self.db.add(session)

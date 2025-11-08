@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { sessionAPI, chatAPI } from '../services/api';
+import Markdown from 'markdown-to-jsx';
 
 export default function LearningSession() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -138,8 +139,24 @@ export default function LearningSession() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Lesson Content
               </h2>
-              <div className="prose max-w-none text-gray-700 whitespace-pre-wrap">
-                {currentSession.content}
+              <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
+                <Markdown
+                  options={{
+                    overrides: {
+                      h1: { props: { className: 'text-3xl font-bold mt-6 mb-4' } },
+                      h2: { props: { className: 'text-2xl font-bold mt-5 mb-3' } },
+                      h3: { props: { className: 'text-xl font-semibold mt-4 mb-2' } },
+                      p: { props: { className: 'mb-4 leading-relaxed' } },
+                      ul: { props: { className: 'mb-4 ml-6 list-disc' } },
+                      ol: { props: { className: 'mb-4 ml-6 list-decimal' } },
+                      li: { props: { className: 'mb-2' } },
+                      blockquote: { props: { className: 'border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600' } },
+                      code: { props: { className: 'bg-gray-100 px-1 py-0.5 rounded text-sm font-mono' } },
+                    },
+                  }}
+                >
+                  {currentSession.content}
+                </Markdown>
               </div>
             </div>
           </div>

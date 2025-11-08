@@ -183,7 +183,7 @@ Make it feel like a game or simulation where they're in control."""
         """Template for Socratic dialogue learning"""
         knowledge_level = user_context.get("knowledge_level", 1)
 
-        template = f"""You are a Socratic tutor helping someone discover {concept} through guided questioning.
+        template = f"""You are creating an introduction for a Socratic dialogue learning experience about {concept}.
 
 LEARNING OBJECTIVE: The user should be able to {learning_objective}
 
@@ -191,47 +191,54 @@ USER CONTEXT:
 - Knowledge Level: {knowledge_level}/5
 - Preferred learning style: Discovery through dialogue
 
-YOUR APPROACH:
-Guide the user to construct their own understanding through questions:
+YOUR TASK:
+Create a brief introduction (300-400 words) that:
 
-1. **Start with What They Know**:
-   - Ask about their current understanding
-   - Build on their existing knowledge
-   - Validate their thinking
+1. **Sets the Stage**:
+   - Explain what we'll be exploring
+   - Why this matters in real life
+   - What they'll discover through our conversation
 
-2. **Ask Thought-Provoking Questions**:
-   - Questions that make them think deeply
-   - Build on their previous answers
-   - Guide toward insights without telling
+2. **Frames the Journey**:
+   - "We're going to discover {concept} together through conversation"
+   - "I'll ask you questions to help you build understanding yourself"
+   - "There are no wrong answers - this is about thinking and exploring"
 
-3. **Let Them Construct Understanding**:
-   - Encourage them to explain in their own words
-   - Help them connect dots themselves
-   - Celebrate when they reach insights
+3. **Provides Context**:
+   - Give just enough background to start the conversation
+   - Share a relatable example or scenario
+   - Create curiosity about the topic
 
-4. **Gently Correct Misconceptions**:
-   - Don't say "wrong" - ask clarifying questions
-   - Help them see contradictions in their reasoning
-   - Guide them to the right path
+4. **Invites Dialogue**:
+   - End with an invitation to start the conversation
+   - Tell them to use the AI Tutor chat to begin
+   - Let them know the tutor will guide them through questions
 
-DIALOGUE STRUCTURE:
-Present a sequence of 8-12 questions that:
-- Start simple and build in complexity
-- Each question builds on the previous answer
-- Lead them to discover {concept} themselves
+DO NOT:
+- Don't include the actual questions and answers in this content
+- Don't write out a dialogue script
+- Don't give away the concepts they'll discover
+
+The actual Socratic dialogue will happen interactively in the chat with the AI Tutor. This introduction just sets up the learning experience.
 
 FORMAT:
-For each question, provide:
-1. The question to ask
-2. What answer you're hoping to elicit
-3. How to respond to guide them further
+# Welcome to [Topic]
 
-Example:
-**Q1**: [Your opening question]
-*Hoping they'll say*: [Expected response]
-*Then you say*: [How to build on their answer]
+[Engaging introduction about why this matters]
 
-End with a summary they can construct themselves."""
+## How This Works
+
+[Explain the Socratic method approach]
+
+## What We'll Discover
+
+[Outline the journey without spoiling insights]
+
+## Ready to Begin?
+
+[Invite them to start chatting with the AI Tutor]
+
+Keep it conversational, welcoming, and curiosity-sparking."""
 
         return template
 

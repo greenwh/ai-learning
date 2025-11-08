@@ -121,6 +121,14 @@ class TutorEngine:
         if profile and profile.cognitive_patterns:
             preferences = profile.cognitive_patterns
 
+        # Get the generated lesson content from session
+        lesson_content = ""
+        if session.session_context and 'generated_content' in session.session_context:
+            lesson_content = session.session_context['generated_content']
+            # Truncate if too long (keep first 1500 chars for context)
+            if len(lesson_content) > 1500:
+                lesson_content = lesson_content[:1500] + "..."
+
         # Build system prompt
         prompt = f"""You are an expert tutor helping someone learn about {module.title if module else 'investing'}.
 
@@ -128,6 +136,9 @@ CURRENT LEARNING CONTEXT:
 - Topic: {module.title if module else 'General finance concepts'}
 - Learning Objectives: {', '.join(module.learning_objectives) if module else 'Understanding fundamentals'}
 - Current Modality: {session.modality_used}
+
+LESSON CONTENT THEY'RE VIEWING:
+{lesson_content if lesson_content else "No specific lesson content available"}
 
 STUDENT PROFILE:
 - Learning Style: {session.modality_used}"""
