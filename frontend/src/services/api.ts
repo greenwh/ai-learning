@@ -168,4 +168,49 @@ export const progressAPI = {
   },
 };
 
+// Dynamic Learning APIs
+export interface AssessmentResponse {
+  status: string;
+  question?: string;
+  questions_asked?: number;
+  assessment_complete: boolean;
+  knowledge_level?: number;
+  summary?: string;
+  gaps?: string[];
+  starting_point?: string;
+  learning_objectives?: string[];
+}
+
+export interface ConversationMessage {
+  role: string;
+  content: string;
+}
+
+export const dynamicAPI = {
+  startAssessment: async (userId: string, subject: string): Promise<AssessmentResponse> => {
+    const response = await api.post(`/dynamic/assess/start?user_id=${userId}`, { subject });
+    return response.data;
+  },
+
+  continueAssessment: async (
+    userId: string,
+    subject: string,
+    conversationHistory: ConversationMessage[]
+  ): Promise<AssessmentResponse> => {
+    const response = await api.post(`/dynamic/assess/continue?user_id=${userId}`, {
+      subject,
+      conversation_history: conversationHistory,
+    });
+    return response.data;
+  },
+
+  createModule: async (userId: string, subject: string, assessment: any): Promise<Module> => {
+    const response = await api.post(`/dynamic/create-module?user_id=${userId}`, {
+      subject,
+      assessment,
+    });
+    return response.data;
+  },
+};
+
 export default api;

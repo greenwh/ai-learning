@@ -16,7 +16,7 @@ from backend.database import init_db, get_db
 from backend.learning_engine import (
     StyleEngine, ContentDeliveryEngine, TutorEngine
 )
-from backend.api.routes import auth, sessions, content, chat, progress
+from backend.api.routes import auth, sessions, content, chat, progress, dynamic
 from backend.api import models as api_models
 
 # Initialize FastAPI app
@@ -58,6 +58,7 @@ async def root():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(dynamic.router, prefix="/api/dynamic", tags=["Dynamic Learning"])
 app.include_router(sessions.router, prefix="/api/sessions", tags=["Learning Sessions"])
 app.include_router(content.router, prefix="/api/content", tags=["Content"])
 app.include_router(chat.router, prefix="/api/chat", tags=["AI Tutor Chat"])
