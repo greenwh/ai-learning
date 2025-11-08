@@ -213,4 +213,39 @@ export const dynamicAPI = {
   },
 };
 
+// Settings API
+export interface UserSettings {
+  // AI Provider Settings
+  preferred_provider?: string;
+  anthropic_api_key?: string;
+  anthropic_model: string;
+  openai_api_key?: string;
+  openai_model: string;
+  google_api_key?: string;
+  google_model: string;
+
+  // Learning Preferences
+  default_modality?: string;
+  session_reminders: boolean;
+  spaced_repetition_enabled: boolean;
+
+  // UI Preferences
+  theme: string;
+  language: string;
+
+  updated_at?: string;
+}
+
+export const settingsAPI = {
+  getSettings: async (userId: string): Promise<UserSettings> => {
+    const response = await api.get(`/settings/${userId}`);
+    return response.data;
+  },
+
+  updateSettings: async (userId: string, settings: Partial<UserSettings>): Promise<UserSettings> => {
+    const response = await api.put(`/settings/${userId}`, settings);
+    return response.data;
+  },
+};
+
 export default api;

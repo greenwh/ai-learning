@@ -186,3 +186,32 @@ class RetentionTest(Base):
     user_response = Column(Text)
 
     # No explicit relationships defined to keep it lightweight
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
+
+    # AI Provider Settings
+    preferred_provider = Column(String)  # anthropic, openai, google
+    anthropic_api_key = Column(String)  # Encrypted
+    anthropic_model = Column(String, default="claude-sonnet-4-5-20250929")
+    openai_api_key = Column(String)  # Encrypted
+    openai_model = Column(String, default="gpt-4o-mini")
+    google_api_key = Column(String)  # Encrypted
+    google_model = Column(String, default="gemini-2.0-flash-exp")
+
+    # Learning Preferences
+    default_modality = Column(String)  # narrative_story, interactive_hands_on, etc.
+    session_reminders = Column(Boolean, default=True)
+    spaced_repetition_enabled = Column(Boolean, default=True)
+
+    # UI Preferences
+    theme = Column(String, default="light")  # light, dark
+    language = Column(String, default="en")
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    user = relationship("User")

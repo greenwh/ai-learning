@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import LearningSession from './pages/LearningSession';
 import Progress from './pages/Progress';
+import Settings from './pages/Settings';
 
 function App() {
   const { user } = useStore();
@@ -28,6 +29,10 @@ function App() {
           <Route
             path="/progress"
             element={user ? <Progress /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/settings"
+            element={user ? <Settings /> : <Navigate to="/" />}
           />
         </Routes>
       </div>

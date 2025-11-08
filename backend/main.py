@@ -21,7 +21,7 @@ from backend.database import init_db, get_db
 from backend.learning_engine import (
     StyleEngine, ContentDeliveryEngine, TutorEngine
 )
-from backend.api.routes import auth, sessions, content, chat, progress, dynamic, backup, enhanced
+from backend.api.routes import auth, sessions, content, chat, progress, dynamic, backup, enhanced, settings
 from backend.api import models as api_models
 
 # Initialize FastAPI app
@@ -70,6 +70,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["AI Tutor Chat"])
 app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
 app.include_router(backup.router, prefix="/api/backup", tags=["Backup & Export"])
 app.include_router(enhanced.router, prefix="/api/enhanced", tags=["Enhanced Features"])
+app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
 
 
 if __name__ == "__main__":
