@@ -202,12 +202,25 @@ class AIProviderManager:
         # Add current user prompt
         messages.append({"role": "user", "content": user_prompt})
 
-        response = self.openai_client.chat.completions.create(
-            model=self.openai_model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
+        # Newer models use max_completion_tokens instead of max_tokens
+        # Models like o1, o3, gpt-4o (2024-08-06 and later) use the new parameter
+        uses_new_api = any(model_name in self.openai_model.lower() for model_name in [
+            'o1', 'o3', 'gpt-5', '2024-08-06', '2024-11-20'
+        ])
+
+        kwargs = {
+            "model": self.openai_model,
+            "messages": messages,
+            "temperature": temperature
+        }
+
+        # Use appropriate token parameter
+        if uses_new_api:
+            kwargs["max_completion_tokens"] = max_tokens
+        else:
+            kwargs["max_tokens"] = max_tokens
+
+        response = self.openai_client.chat.completions.create(**kwargs)
 
         return response.choices[0].message.content
 
@@ -238,7 +251,22 @@ class AIProviderManager:
             }
         )
 
-        return response.text
+        # Handle response properly - check for blocking or use parts accessor
+        if not response.candidates:
+            raise Exception("Gemini returned no candidates")
+
+        candidate = response.candidates[0]
+
+        # Extract text from parts
+        if candidate.content and candidate.content.parts:
+            text_parts = [part.text for part in candidate.content.parts if hasattr(part, 'text')]
+            return ''.join(text_parts)
+
+        # Fallback to simple text accessor if it works
+        try:
+            return response.text
+        except:
+            raise Exception("Could not extract text from Gemini response")
 
     async def _generate_with_fallback(
         self, failed_provider: AIProvider, system_prompt: str,
