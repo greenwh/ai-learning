@@ -271,8 +271,22 @@ class AIProviderManager:
             response = self.openai_client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
+            error_str = str(e)
+
+            # Handle temperature not supported error
+            if "temperature" in error_str and ("not support" in error_str or "unsupported" in error_str.lower()):
+                print(f"⚠️ [OpenAI] Model {self.openai_model} doesn't support custom temperature, using default")
+                # Retry with default temperature (remove the parameter)
+                del kwargs["temperature"]
+                try:
+                    response = self.openai_client.chat.completions.create(**kwargs)
+                    return response.choices[0].message.content
+                except Exception as e2:
+                    # If it still fails, continue to other error handling
+                    error_str = str(e2)
+
             # If max_tokens fails and error mentions max_completion_tokens, try that
-            if "max_completion_tokens" in str(e):
+            if "max_completion_tokens" in error_str:
                 try:
                     del kwargs["max_tokens"]
                     kwargs["max_completion_tokens"] = max_tokens
