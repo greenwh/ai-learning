@@ -194,13 +194,15 @@ class UserSettings(Base):
     user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
 
     # AI Provider Settings
-    preferred_provider = Column(String)  # anthropic, openai, google
+    preferred_provider = Column(String)  # anthropic, openai, google, xai
     anthropic_api_key = Column(String)  # Encrypted
     anthropic_model = Column(String, default="claude-sonnet-4-5-20250929")
     openai_api_key = Column(String)  # Encrypted
     openai_model = Column(String, default="gpt-4o-mini")
     google_api_key = Column(String)  # Encrypted
-    google_model = Column(String, default="gemini-2.0-flash-exp")
+    google_model = Column(String, default="gemini-2.0-flash")
+    xai_api_key = Column(String)  # Encrypted
+    xai_model = Column(String, default="grok-3")
 
     # Learning Preferences
     default_modality = Column(String)  # narrative_story, interactive_hands_on, etc.

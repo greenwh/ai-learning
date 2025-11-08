@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { settingsAPI, UserSettings } from '../services/api';
+import { settingsAPI, UserSettings, AvailableModels } from '../services/api';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user } = useStore();
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [availableModels, setAvailableModels] = useState<AvailableModels | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'learning' | 'ui'>('ai');
@@ -16,6 +17,7 @@ export default function Settings() {
   useEffect(() => {
     if (user) {
       loadSettings();
+      loadAvailableModels();
     }
   }, [user]);
 
@@ -31,6 +33,15 @@ export default function Settings() {
       alert('Error loading settings');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadAvailableModels = async () => {
+    try {
+      const models = await settingsAPI.getAvailableModels();
+      setAvailableModels(models);
+    } catch (error) {
+      console.error('Error loading available models:', error);
     }
   };
 
@@ -136,7 +147,7 @@ export default function Settings() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Provider Configuration</h3>
                   <p className="text-sm text-gray-600 mb-6">
-                    Configure your AI provider API keys and models. Settings saved here override defaults from .env file.
+                    Configure your AI provider API keys and models. You can type any model name or select from suggestions.
                   </p>
                 </div>
 
@@ -154,6 +165,7 @@ export default function Settings() {
                     <option value="anthropic">Anthropic (Claude)</option>
                     <option value="openai">OpenAI (GPT)</option>
                     <option value="google">Google (Gemini)</option>
+                    <option value="xai">xAI (Grok)</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     Leave as "Auto-select" to let the system choose the best AI for each task
@@ -178,17 +190,23 @@ export default function Settings() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Model
+                        Model (type or select)
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={settings.anthropic_model}
                         onChange={(e) => updateSetting('anthropic_model', e.target.value)}
+                        list="anthropic-models"
+                        placeholder="claude-sonnet-4-5-20250929"
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Recommended)</option>
-                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                      </select>
+                      />
+                      {availableModels && (
+                        <datalist id="anthropic-models">
+                          {availableModels.anthropic.map(model => (
+                            <option key={model} value={model} />
+                          ))}
+                        </datalist>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -211,17 +229,23 @@ export default function Settings() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Model
+                        Model (type or select)
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={settings.openai_model}
                         onChange={(e) => updateSetting('openai_model', e.target.value)}
+                        list="openai-models"
+                        placeholder="gpt-4o-mini"
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="gpt-4o-mini">GPT-4o Mini (Fast & Affordable)</option>
-                        <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                      </select>
+                      />
+                      {availableModels && (
+                        <datalist id="openai-models">
+                          {availableModels.openai.map(model => (
+                            <option key={model} value={model} />
+                          ))}
+                        </datalist>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -244,17 +268,62 @@ export default function Settings() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Model
+                        Model (type or select)
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={settings.google_model}
                         onChange={(e) => updateSetting('google_model', e.target.value)}
+                        list="google-models"
+                        placeholder="gemini-2.0-flash"
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                      </select>
+                      />
+                      {availableModels && (
+                        <datalist id="google-models">
+                          {availableModels.google.map(model => (
+                            <option key={model} value={model} />
+                          ))}
+                        </datalist>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* xAI Settings */}
+                <div className="border-t pt-6">
+                  <h4 className="font-semibold text-gray-900 mb-4">xAI (Grok)</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.xai_api_key || ''}
+                        onChange={(e) => updateSetting('xai_api_key', e.target.value)}
+                        placeholder="xai-..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Model (type or select)
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.xai_model}
+                        onChange={(e) => updateSetting('xai_model', e.target.value)}
+                        list="xai-models"
+                        placeholder="grok-3"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {availableModels && (
+                        <datalist id="xai-models">
+                          {availableModels.xai.map(model => (
+                            <option key={model} value={model} />
+                          ))}
+                        </datalist>
+                      )}
                     </div>
                   </div>
                 </div>

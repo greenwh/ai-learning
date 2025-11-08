@@ -223,6 +223,8 @@ export interface UserSettings {
   openai_model: string;
   google_api_key?: string;
   google_model: string;
+  xai_api_key?: string;
+  xai_model: string;
 
   // Learning Preferences
   default_modality?: string;
@@ -236,6 +238,13 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+export interface AvailableModels {
+  anthropic: string[];
+  openai: string[];
+  google: string[];
+  xai: string[];
+}
+
 export const settingsAPI = {
   getSettings: async (userId: string): Promise<UserSettings> => {
     const response = await api.get(`/settings/${userId}`);
@@ -244,6 +253,11 @@ export const settingsAPI = {
 
   updateSettings: async (userId: string, settings: Partial<UserSettings>): Promise<UserSettings> => {
     const response = await api.put(`/settings/${userId}`, settings);
+    return response.data;
+  },
+
+  getAvailableModels: async (): Promise<AvailableModels> => {
+    const response = await api.get('/settings/available-models');
     return response.data;
   },
 };

@@ -4,7 +4,7 @@ User Settings API routes
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 from datetime import datetime
 import os
 
@@ -22,7 +22,9 @@ class SettingsResponse(BaseModel):
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
     google_api_key: Optional[str] = None
-    google_model: str = "gemini-2.0-flash-exp"
+    google_model: str = "gemini-2.0-flash"
+    xai_api_key: Optional[str] = None
+    xai_model: str = "grok-3"
 
     # Learning Preferences
     default_modality: Optional[str] = None
@@ -45,6 +47,8 @@ class SettingsUpdate(BaseModel):
     openai_model: Optional[str] = None
     google_api_key: Optional[str] = None
     google_model: Optional[str] = None
+    xai_api_key: Optional[str] = None
+    xai_model: Optional[str] = None
 
     # Learning Preferences
     default_modality: Optional[str] = None
@@ -54,6 +58,30 @@ class SettingsUpdate(BaseModel):
     # UI Preferences
     theme: Optional[str] = None
     language: Optional[str] = None
+
+
+class AvailableModelsResponse(BaseModel):
+    anthropic: List[str]
+    openai: List[str]
+    google: List[str]
+    xai: List[str]
+
+
+@router.get("/available-models", response_model=AvailableModelsResponse)
+async def get_available_models():
+    """
+    Get available AI models from environment variables
+    """
+    def parse_models(env_var: str, default: str) -> List[str]:
+        models_str = os.getenv(env_var, default)
+        return [m.strip() for m in models_str.split(',') if m.strip()]
+
+    return AvailableModelsResponse(
+        anthropic=parse_models("ANTHROPIC_MODELS", "claude-sonnet-4-5-20250929,claude-opus-4-1-20250805,claude-haiku-4-5-20251001"),
+        openai=parse_models("OPENAI_MODELS", "gpt-4o-mini,gpt-4o,o1,o1-mini"),
+        google=parse_models("GEMINI_MODELS", "gemini-2.0-flash,gemini-2.5-pro,gemini-2.5-flash"),
+        xai=parse_models("XAI_MODELS", "grok-3,grok-3-mini,grok-4-fast-reasoning")
+    )
 
 
 @router.get("/{user_id}", response_model=SettingsResponse)
@@ -75,7 +103,9 @@ async def get_settings(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             google_api_key=os.getenv("GOOGLE_API_KEY"),
-            google_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp"),
+            google_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+            xai_api_key=os.getenv("XAI_API_KEY"),
+            xai_model=os.getenv("XAI_MODEL", "grok-3"),
         )
         db.add(settings)
         db.commit()
@@ -89,6 +119,8 @@ async def get_settings(
         openai_model=settings.openai_model,
         google_api_key=settings.google_api_key or os.getenv("GOOGLE_API_KEY"),
         google_model=settings.google_model,
+        xai_api_key=settings.xai_api_key or os.getenv("XAI_API_KEY"),
+        xai_model=settings.xai_model,
         default_modality=settings.default_modality,
         session_reminders=settings.session_reminders,
         spaced_repetition_enabled=settings.spaced_repetition_enabled,
@@ -131,6 +163,8 @@ async def update_settings(
         openai_model=settings.openai_model,
         google_api_key=settings.google_api_key,
         google_model=settings.google_model,
+        xai_api_key=settings.xai_api_key,
+        xai_model=settings.xai_model,
         default_modality=settings.default_modality,
         session_reminders=settings.session_reminders,
         spaced_repetition_enabled=settings.spaced_repetition_enabled,
