@@ -243,30 +243,48 @@ class AIProviderManager:
         # Add current user prompt
         messages.append({"role": "user", "content": user_prompt})
 
-        # Newer models use max_completion_tokens instead of max_tokens
-        # This includes: o1, o3, and gpt-5 series models
-        model_lower = self.openai_model.lower()
-        uses_new_api = (
-            model_lower.startswith('o1') or
-            model_lower.startswith('o3') or
-            model_lower.startswith('gpt-5')
-        )
-
         kwargs = {
             "model": self.openai_model,
             "messages": messages,
             "temperature": temperature
         }
 
-        # Use appropriate token parameter
-        if uses_new_api:
-            kwargs["max_completion_tokens"] = max_tokens
-        else:
+        # Try different token parameter approaches based on model
+        # Some models use max_completion_tokens, some use max_tokens
+        # The API and Python library versions may have different support
+        model_lower = self.openai_model.lower()
+
+        # First, try with the parameter that should work based on model type
+        if model_lower.startswith('o1') or model_lower.startswith('o3'):
+            # o1/o3 models definitely use max_completion_tokens
+            try:
+                kwargs["max_completion_tokens"] = max_tokens
+                response = self.openai_client.chat.completions.create(**kwargs)
+                return response.choices[0].message.content
+            except TypeError:
+                # Python library doesn't support this parameter yet
+                del kwargs["max_completion_tokens"]
+
+        # For all other models (including gpt-5, gpt-4, etc.), try max_tokens first
+        try:
             kwargs["max_tokens"] = max_tokens
-
-        response = self.openai_client.chat.completions.create(**kwargs)
-
-        return response.choices[0].message.content
+            response = self.openai_client.chat.completions.create(**kwargs)
+            return response.choices[0].message.content
+        except Exception as e:
+            # If max_tokens fails and error mentions max_completion_tokens, try that
+            if "max_completion_tokens" in str(e):
+                try:
+                    del kwargs["max_tokens"]
+                    kwargs["max_completion_tokens"] = max_tokens
+                    response = self.openai_client.chat.completions.create(**kwargs)
+                    return response.choices[0].message.content
+                except TypeError:
+                    # Library doesn't support max_completion_tokens, try without any max param
+                    del kwargs["max_completion_tokens"]
+                    response = self.openai_client.chat.completions.create(**kwargs)
+                    return response.choices[0].message.content
+            else:
+                raise
 
     async def _generate_google(
         self, system_prompt: str, user_prompt: str,
