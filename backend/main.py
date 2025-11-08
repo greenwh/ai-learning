@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Load environment variables
 load_dotenv()
