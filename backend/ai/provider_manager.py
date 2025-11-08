@@ -13,6 +13,7 @@ class AIProvider(Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     GOOGLE = "google"
+    XAI = "xai"
 
 
 class TaskType(Enum):
@@ -33,6 +34,7 @@ class AIProviderManager:
         self.anthropic_client = None
         self.openai_client = None
         self.google_configured = False
+        self.xai_client = None
 
         # Configure Anthropic
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -52,6 +54,15 @@ class AIProviderManager:
             genai.configure(api_key=google_key)
             self.google_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
             self.google_configured = True
+
+        # Configure xAI (uses OpenAI-compatible API)
+        xai_key = os.getenv("XAI_API_KEY")
+        if xai_key:
+            self.xai_client = OpenAI(
+                api_key=xai_key,
+                base_url="https://api.x.ai/v1"
+            )
+            self.xai_model = os.getenv("XAI_MODEL", "grok-3")
 
     def select_provider(
         self,
@@ -97,6 +108,8 @@ class AIProviderManager:
             return AIProvider.ANTHROPIC
         elif self.openai_client:
             return AIProvider.OPENAI
+        elif self.xai_client:
+            return AIProvider.XAI
         elif self.google_configured:
             return AIProvider.GOOGLE
 
@@ -110,6 +123,8 @@ class AIProviderManager:
             return self.openai_client is not None
         elif provider == AIProvider.GOOGLE:
             return self.google_configured
+        elif provider == AIProvider.XAI:
+            return self.xai_client is not None
         return False
 
     async def generate_content(
@@ -148,6 +163,11 @@ class AIProviderManager:
                 )
             elif provider == AIProvider.GOOGLE:
                 return await self._generate_google(
+                    system_prompt, user_prompt, max_tokens,
+                    temperature, conversation_history
+                )
+            elif provider == AIProvider.XAI:
+                return await self._generate_xai(
                     system_prompt, user_prompt, max_tokens,
                     temperature, conversation_history
                 )
@@ -268,6 +288,31 @@ class AIProviderManager:
         except:
             raise Exception("Could not extract text from Gemini response")
 
+    async def _generate_xai(
+        self, system_prompt: str, user_prompt: str,
+        max_tokens: int, temperature: float,
+        conversation_history: Optional[List[Dict[str, str]]] = None
+    ) -> str:
+        """Generate content using xAI (Grok) - uses OpenAI-compatible API"""
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history if provided
+        if conversation_history:
+            messages.extend(conversation_history)
+
+        # Add current user prompt
+        messages.append({"role": "user", "content": user_prompt})
+
+        # xAI uses standard OpenAI API format
+        response = self.xai_client.chat.completions.create(
+            model=self.xai_model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
+
+        return response.choices[0].message.content
+
     async def _generate_with_fallback(
         self, failed_provider: AIProvider, system_prompt: str,
         user_prompt: str, max_tokens: int, temperature: float,
@@ -277,6 +322,7 @@ class AIProviderManager:
         fallback_order = [
             AIProvider.ANTHROPIC,
             AIProvider.OPENAI,
+            AIProvider.XAI,
             AIProvider.GOOGLE
         ]
 
@@ -290,6 +336,11 @@ class AIProviderManager:
                         )
                     elif provider == AIProvider.OPENAI:
                         return await self._generate_openai(
+                            system_prompt, user_prompt, max_tokens,
+                            temperature, conversation_history
+                        )
+                    elif provider == AIProvider.XAI:
+                        return await self._generate_xai(
                             system_prompt, user_prompt, max_tokens,
                             temperature, conversation_history
                         )

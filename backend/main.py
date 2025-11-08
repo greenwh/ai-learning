@@ -46,6 +46,35 @@ app.add_middleware(
 async def startup():
     """Initialize database on startup"""
     init_db()
+
+    # Run migrations for database schema updates
+    from sqlalchemy import inspect, text
+    from backend.database.connection import engine
+
+    try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+
+        if 'user_settings' in tables:
+            columns = [col['name'] for col in inspector.get_columns('user_settings')]
+
+            # Add missing xai columns if they don't exist
+            migrations = []
+            if 'xai_api_key' not in columns:
+                migrations.append("ALTER TABLE user_settings ADD COLUMN xai_api_key VARCHAR")
+            if 'xai_model' not in columns:
+                migrations.append("ALTER TABLE user_settings ADD COLUMN xai_model VARCHAR DEFAULT 'grok-3'")
+
+            if migrations:
+                print("  Running database migrations...")
+                with engine.connect() as conn:
+                    for migration_sql in migrations:
+                        conn.execute(text(migration_sql))
+                        conn.commit()
+                print(f"  ✅ Applied {len(migrations)} migration(s)")
+    except Exception as e:
+        print(f"  ⚠️  Migration check failed: {e}")
+
     print("✅ Database initialized")
     print("✅ AI Personalized Learning System ready!")
 
