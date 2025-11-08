@@ -243,14 +243,13 @@ class AIProviderManager:
         # Add current user prompt
         messages.append({"role": "user", "content": user_prompt})
 
-        # Only o1 and o3 series models use max_completion_tokens
-        # All other models (including gpt-4, gpt-5, etc.) use max_tokens
+        # Newer models use max_completion_tokens instead of max_tokens
+        # This includes: o1, o3, and gpt-5 series models
         model_lower = self.openai_model.lower()
         uses_new_api = (
-            model_lower.startswith('o1-') or
-            model_lower.startswith('o3-') or
-            model_lower == 'o1' or
-            model_lower == 'o3'
+            model_lower.startswith('o1') or
+            model_lower.startswith('o3') or
+            model_lower.startswith('gpt-5')
         )
 
         kwargs = {
