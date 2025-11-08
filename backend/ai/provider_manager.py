@@ -315,20 +315,107 @@ class AIProviderManager:
 
         # Handle response properly - check for blocking or use parts accessor
         if not response.candidates:
-            raise Exception("Gemini returned no candidates")
+            raise Exception("Gemini returned no candidates - response may have been blocked by safety filters")
 
         candidate = response.candidates[0]
 
-        # Extract text from parts
-        if candidate.content and candidate.content.parts:
-            text_parts = [part.text for part in candidate.content.parts if hasattr(part, 'text')]
-            return ''.join(text_parts)
+        # Check for blocked content
+        if hasattr(candidate, 'finish_reason'):
+            finish_reason = str(candidate.finish_reason)
+            if 'SAFETY' in finish_reason or 'BLOCKED' in finish_reason:
+                raise Exception(f"Gemini response blocked due to safety filters: {finish_reason}")
 
-        # Fallback to simple text accessor if it works
+        # Try multiple methods to extract text
+        print(f"🔍 [Gemini Debug] Processing response with {len(response.candidates)} candidate(s)")
+
+        # Method 1: Extract text from parts (most reliable for newer API versions)
+        if candidate.content and candidate.content.parts:
+            text_parts = []
+            for i, part in enumerate(candidate.content.parts):
+                print(f"🔍 [Gemini Debug] Part {i}: has_text={hasattr(part, 'text')}")
+
+                # Try different ways to get text from the part
+                part_text = None
+
+                # Direct attribute access
+                if hasattr(part, 'text'):
+                    part_text = part.text
+
+                # Try as dictionary (some versions return dict-like objects)
+                elif isinstance(part, dict) and 'text' in part:
+                    part_text = part['text']
+
+                # Try callable
+                elif callable(getattr(part, 'text', None)):
+                    try:
+                        part_text = part.text()
+                    except:
+                        pass
+
+                if part_text:
+                    text_parts.append(str(part_text))
+
+            if text_parts:
+                result = ''.join(text_parts)
+                print(f"✅ [Gemini Debug] Extracted {len(result)} chars from parts")
+                return result
+
+        # Method 2: Try direct text accessor on response
         try:
-            return response.text
-        except:
-            raise Exception("Could not extract text from Gemini response")
+            text = response.text
+            if text:
+                print(f"✅ [Gemini Debug] Extracted {len(text)} chars from response.text")
+                return text
+        except Exception as e:
+            print(f"⚠️ [Gemini Debug] response.text failed: {e}")
+
+        # Method 3: Try to access text from candidate directly
+        try:
+            if hasattr(candidate, 'text'):
+                text = candidate.text
+                if text:
+                    print(f"✅ [Gemini Debug] Extracted {len(text)} chars from candidate.text")
+                    return text
+        except Exception as e:
+            print(f"⚠️ [Gemini Debug] candidate.text failed: {e}")
+
+        # Method 4: Try accessing the raw response parts differently
+        try:
+            if hasattr(response, 'parts') and response.parts:
+                text_parts = []
+                for part in response.parts:
+                    if hasattr(part, 'text'):
+                        text_parts.append(str(part.text))
+
+                if text_parts:
+                    result = ''.join(text_parts)
+                    print(f"✅ [Gemini Debug] Extracted {len(result)} chars from response.parts")
+                    return result
+        except Exception as e:
+            print(f"⚠️ [Gemini Debug] response.parts failed: {e}")
+
+        # If all methods fail, provide detailed error
+        error_details = f"Could not extract text from Gemini response. "
+        error_details += f"Candidates: {len(response.candidates) if response.candidates else 0}, "
+
+        if candidate:
+            error_details += f"Finish reason: {candidate.finish_reason if hasattr(candidate, 'finish_reason') else 'unknown'}, "
+            error_details += f"Has content: {candidate.content is not None}, "
+
+            if candidate.content:
+                error_details += f"Has parts: {candidate.content.parts is not None}, "
+
+                if candidate.content.parts:
+                    error_details += f"Parts count: {len(candidate.content.parts)}, "
+                    # Try to get part types for debugging
+                    try:
+                        part_types = [type(p).__name__ for p in candidate.content.parts]
+                        error_details += f"Part types: {part_types}"
+                    except:
+                        pass
+
+        print(f"❌ [Gemini Debug] {error_details}")
+        raise Exception(error_details)
 
     async def _generate_xai(
         self, system_prompt: str, user_prompt: str,
