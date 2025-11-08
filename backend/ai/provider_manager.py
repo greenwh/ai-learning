@@ -329,36 +329,50 @@ class AIProviderManager:
         print(f"🔍 [Gemini Debug] Processing response with {len(response.candidates)} candidate(s)")
 
         # Method 1: Extract text from parts (most reliable for newer API versions)
-        if candidate.content and candidate.content.parts:
-            text_parts = []
-            for i, part in enumerate(candidate.content.parts):
-                print(f"🔍 [Gemini Debug] Part {i}: has_text={hasattr(part, 'text')}")
+        try:
+            if candidate.content and candidate.content.parts is not None:
+                parts_list = list(candidate.content.parts)
+                print(f"🔍 [Gemini Debug] Found {len(parts_list)} part(s) in candidate.content.parts")
 
-                # Try different ways to get text from the part
-                part_text = None
+                text_parts = []
+                for i, part in enumerate(parts_list):
+                    print(f"🔍 [Gemini Debug] Part {i}: type={type(part).__name__}, has_text={hasattr(part, 'text')}")
 
-                # Direct attribute access
-                if hasattr(part, 'text'):
-                    part_text = part.text
+                    # Try different ways to get text from the part
+                    part_text = None
 
-                # Try as dictionary (some versions return dict-like objects)
-                elif isinstance(part, dict) and 'text' in part:
-                    part_text = part['text']
+                    # Direct attribute access
+                    if hasattr(part, 'text'):
+                        try:
+                            part_text = part.text
+                            print(f"🔍 [Gemini Debug] Part {i}: got text via attribute, length={len(str(part_text)) if part_text else 0}")
+                        except Exception as e:
+                            print(f"⚠️ [Gemini Debug] Part {i}: attribute access failed: {e}")
 
-                # Try callable
-                elif callable(getattr(part, 'text', None)):
-                    try:
-                        part_text = part.text()
-                    except:
-                        pass
+                    # Try as dictionary (some versions return dict-like objects)
+                    if not part_text and isinstance(part, dict) and 'text' in part:
+                        part_text = part['text']
+                        print(f"🔍 [Gemini Debug] Part {i}: got text via dict access")
 
-                if part_text:
-                    text_parts.append(str(part_text))
+                    # Try callable
+                    if not part_text and callable(getattr(part, 'text', None)):
+                        try:
+                            part_text = part.text()
+                            print(f"🔍 [Gemini Debug] Part {i}: got text via callable")
+                        except Exception as e:
+                            print(f"⚠️ [Gemini Debug] Part {i}: callable access failed: {e}")
 
-            if text_parts:
-                result = ''.join(text_parts)
-                print(f"✅ [Gemini Debug] Extracted {len(result)} chars from parts")
-                return result
+                    if part_text:
+                        text_parts.append(str(part_text))
+
+                if text_parts:
+                    result = ''.join(text_parts)
+                    print(f"✅ [Gemini Debug] Extracted {len(result)} chars from {len(text_parts)} part(s)")
+                    return result
+                else:
+                    print(f"⚠️ [Gemini Debug] Method 1 failed: parts exist but no text extracted")
+        except Exception as e:
+            print(f"⚠️ [Gemini Debug] Method 1 (candidate.content.parts) failed: {e}")
 
         # Method 2: Try direct text accessor on response
         try:
@@ -405,14 +419,21 @@ class AIProviderManager:
             if candidate.content:
                 error_details += f"Has parts: {candidate.content.parts is not None}, "
 
-                if candidate.content.parts:
-                    error_details += f"Parts count: {len(candidate.content.parts)}, "
-                    # Try to get part types for debugging
+                if candidate.content.parts is not None:
                     try:
+                        parts_count = len(list(candidate.content.parts))
+                        error_details += f"Parts count: {parts_count}, "
+                        # Try to get part types for debugging
                         part_types = [type(p).__name__ for p in candidate.content.parts]
-                        error_details += f"Part types: {part_types}"
-                    except:
-                        pass
+                        error_details += f"Part types: {part_types}, "
+
+                        # Try to see what attributes parts have
+                        if parts_count > 0:
+                            first_part = list(candidate.content.parts)[0]
+                            part_attrs = [attr for attr in dir(first_part) if not attr.startswith('_')]
+                            error_details += f"First part attributes: {part_attrs[:10]}"  # Limit to first 10
+                    except Exception as e:
+                        error_details += f"Error inspecting parts: {e}"
 
         print(f"❌ [Gemini Debug] {error_details}")
         raise Exception(error_details)
