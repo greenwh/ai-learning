@@ -266,39 +266,59 @@ class AIProviderManager:
                 del kwargs["max_completion_tokens"]
 
         # For all other models (including gpt-5, gpt-4, etc.), try max_tokens first
+        # We'll try multiple combinations to handle different model restrictions
+        last_error = None
+
+        # Attempt 1: Try with temperature + max_tokens (the ideal case)
         try:
             kwargs["max_tokens"] = max_tokens
             response = self.openai_client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
+            last_error = e
             error_str = str(e)
 
-            # Handle temperature not supported error
+            # Check if temperature is the issue
             if "temperature" in error_str and ("not support" in error_str or "unsupported" in error_str.lower()):
                 print(f"⚠️ [OpenAI] Model {self.openai_model} doesn't support custom temperature, using default")
-                # Retry with default temperature (remove the parameter)
-                del kwargs["temperature"]
+                # Attempt 2: Remove temperature and retry
+                if "temperature" in kwargs:
+                    del kwargs["temperature"]
+
                 try:
                     response = self.openai_client.chat.completions.create(**kwargs)
                     return response.choices[0].message.content
                 except Exception as e2:
-                    # If it still fails, continue to other error handling
+                    last_error = e2
                     error_str = str(e2)
 
-            # If max_tokens fails and error mentions max_completion_tokens, try that
+            # Check if we need max_completion_tokens instead of max_tokens
             if "max_completion_tokens" in error_str:
+                print(f"⚠️ [OpenAI] Model {self.openai_model} requires max_completion_tokens instead of max_tokens")
+                # Attempt 3: Try max_completion_tokens
                 try:
-                    del kwargs["max_tokens"]
+                    if "max_tokens" in kwargs:
+                        del kwargs["max_tokens"]
                     kwargs["max_completion_tokens"] = max_tokens
                     response = self.openai_client.chat.completions.create(**kwargs)
                     return response.choices[0].message.content
-                except TypeError:
-                    # Library doesn't support max_completion_tokens, try without any max param
+                except Exception as e3:
+                    last_error = e3
+
+            # Attempt 4: Last resort - try without any token limit
+            try:
+                if "max_tokens" in kwargs:
+                    del kwargs["max_tokens"]
+                if "max_completion_tokens" in kwargs:
                     del kwargs["max_completion_tokens"]
-                    response = self.openai_client.chat.completions.create(**kwargs)
-                    return response.choices[0].message.content
-            else:
-                raise
+                print(f"⚠️ [OpenAI] Trying without token limit for model {self.openai_model}")
+                response = self.openai_client.chat.completions.create(**kwargs)
+                return response.choices[0].message.content
+            except Exception as e4:
+                last_error = e4
+
+            # If all attempts failed, raise the last error
+            raise last_error
 
     async def _generate_google(
         self, system_prompt: str, user_prompt: str,
