@@ -264,6 +264,53 @@ GET    /api/content/modules/:id               # Get module
 GET    /api/progress/:user_id/overview        # Get progress
 ```
 
+### Backup & Export
+```
+POST   /api/backup/database/backup            # Create database backup
+GET    /api/backup/database/backups           # List all backups
+POST   /api/backup/modules/export             # Export modules to JSON
+POST   /api/backup/modules/import             # Import modules
+POST   /api/backup/profile/export             # Export user profile
+POST   /api/backup/profile/import             # Import user profile
+POST   /api/backup/complete/export            # Create complete export package
+GET    /api/backup/download/:filename         # Download backup file
+```
+
+## 💾 Backup & Export Your Data
+
+Protect your learning progress and migrate data between machines.
+
+### Quick Backup Commands
+
+```bash
+cd backend && source venv/bin/activate
+
+# Create full database backup
+python backup_cli.py backup
+
+# Export your learning profile
+python backup_cli.py export-profile YOUR_USER_ID
+
+# Export all modules
+python backup_cli.py export-modules
+
+# List all backups
+python backup_cli.py list
+
+# Restore from backup
+python backup_cli.py restore BACKUP_FILE.db
+```
+
+### Use Cases
+
+- **Daily Routine**: Backup before/after learning sessions
+- **Migration**: Move to new computer with complete export
+- **Sharing**: Export custom modules to share with others
+- **Safety**: Backup before experimenting with new features
+- **Archive**: Monthly snapshots of progress
+
+**Full Documentation**: See [BACKUP_GUIDE.md](BACKUP_GUIDE.md) and [BACKUP_QUICK_REFERENCE.md](BACKUP_QUICK_REFERENCE.md)
+
 ## 🧪 Testing the System
 
 ### Manual Test Flow
