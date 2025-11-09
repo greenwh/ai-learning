@@ -15,7 +15,10 @@ An adaptive learning platform that **discovers how you learn best** while teachi
   - Visual/Diagram-based
 - **Conversational AI Tutor**: Learn through dialogue, not passive consumption
 - **Evidence-Based Adaptation**: Tracks retention and engagement to optimize delivery
-- **Multi-AI Provider Support**: Claude (Anthropic), GPT-4 (OpenAI), Gemini (Google)
+- **Multi-AI Provider Support**: Claude (Anthropic), GPT (OpenAI), Gemini (Google), Grok (xAI)
+  - Automatic fallback between providers
+  - Robust compatibility handling across models
+  - See [MULTI_MODEL_COMPATIBILITY_GUIDE.md](MULTI_MODEL_COMPATIBILITY_GUIDE.md)
 
 ### Enhanced Features
 - **Spaced Repetition**: Scientifically-proven retention testing at optimal intervals (24h, 3d, 7d, 14d, 30d)
@@ -48,10 +51,11 @@ SQLite Database    AI Providers         Engagement Tracking
 - **Python 3.10+**
 - **Node.js 18+**
 - **npm or yarn**
-- **API Keys** (at least one):
-  - Anthropic Claude API key (recommended)
-  - OpenAI API key (optional fallback)
-  - Google Gemini API key (optional)
+- **API Keys** (at least one required):
+  - Anthropic Claude API key (recommended - most reliable)
+  - OpenAI API key (optional - supports GPT-3.5, GPT-4, GPT-5, O1/O3 series)
+  - Google Gemini API key (optional - supports all Gemini models)
+  - xAI API key (optional - supports Grok models)
 
 ## 🚀 Quick Start
 
@@ -81,11 +85,24 @@ cp .env.example .env
 nano .env  # or use your preferred editor
 ```
 
-**Required in .env:**
+**Required in .env (at least one provider):**
 ```bash
+# Anthropic (recommended)
 ANTHROPIC_API_KEY=sk-ant-your-key-here  # Get from console.anthropic.com
 ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+# Optional providers (add any/all for automatic fallback)
+OPENAI_API_KEY=sk-your-key-here         # Get from platform.openai.com
+OPENAI_MODEL=gpt-4o-mini                # Or gpt-4, gpt-5-nano, o1-preview, etc.
+
+GOOGLE_API_KEY=your-key-here            # Get from makersuite.google.com
+GEMINI_MODEL=gemini-2.0-flash-exp       # Or gemini-2.5-flash, etc.
+
+XAI_API_KEY=your-key-here               # Get from x.ai
+XAI_MODEL=grok-3                        # Or other Grok models
 ```
+
+**Note**: System automatically handles model compatibility issues. See [MULTI_MODEL_COMPATIBILITY_GUIDE.md](MULTI_MODEL_COMPATIBILITY_GUIDE.md) for details on model-specific quirks.
 
 ### 3. Initialize Database and Seed Content
 
@@ -357,18 +374,19 @@ curl -X POST "http://localhost:8000/api/sessions/start?user_id=USER_ID" \
 ## 📂 Project Structure
 
 ```
-Placeholder3/
+ai-learning/
 ├── backend/
 │   ├── api/
 │   │   ├── routes/         # API endpoints
 │   │   └── models.py       # Pydantic models
 │   ├── ai/
-│   │   ├── provider_manager.py    # Multi-AI support
+│   │   ├── provider_manager.py    # Multi-AI support with robust fallbacks
 │   │   └── content_templates.py   # Modality templates
 │   ├── learning_engine/
 │   │   ├── style_engine.py        # Thompson Sampling
 │   │   ├── content_delivery.py    # Dynamic generation
-│   │   └── tutor_engine.py        # Conversational AI
+│   │   ├── tutor_engine.py        # Conversational AI
+│   │   └── dynamic_subject.py     # Free-form subject learning
 │   ├── database/
 │   │   ├── models.py       # SQLAlchemy models
 │   │   └── connection.py   # DB setup
@@ -384,7 +402,10 @@ Placeholder3/
 │   │   └── App.tsx
 │   └── package.json
 │
-└── learning_system_arch.md  # Full architecture doc
+├── MULTI_MODEL_COMPATIBILITY_GUIDE.md  # Guide for multi-provider apps
+├── learning_system_arch.md             # Full architecture doc
+├── ENHANCED_FEATURES.md                # Advanced features guide
+└── README.md                            # This file
 ```
 
 ## 🔐 Security & Privacy

@@ -6,19 +6,35 @@ Before starting, make sure you have:
 
 - [ ] Python 3.10 or higher
 - [ ] Node.js 18 or higher
-- [ ] An Anthropic API key (get one at https://console.anthropic.com)
+- [ ] At least one AI provider API key:
+  - **Anthropic** (recommended): https://console.anthropic.com
+  - **OpenAI** (optional): https://platform.openai.com
+  - **Google Gemini** (optional): https://makersuite.google.com
+  - **xAI** (optional): https://x.ai
 
 ## 5-Minute Setup
 
-### Step 1: Add Your API Key
+### Step 1: Add Your API Key(s)
 
-Edit `backend/.env` and add your Anthropic API key:
+Edit `backend/.env` and add at least one provider's API key:
 
 ```bash
+# At least one required (Anthropic recommended)
 ANTHROPIC_API_KEY=sk-ant-your-actual-key-here
+ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+# Optional - add for automatic fallback and provider diversity
+# OPENAI_API_KEY=sk-your-key-here
+# OPENAI_MODEL=gpt-4o-mini
+
+# GOOGLE_API_KEY=your-key-here
+# GEMINI_MODEL=gemini-2.0-flash-exp
+
+# XAI_API_KEY=your-key-here
+# XAI_MODEL=grok-3
 ```
 
-That's the ONLY required configuration!
+**Note**: System has robust compatibility handling for all models. See [MULTI_MODEL_COMPATIBILITY_GUIDE.md](MULTI_MODEL_COMPATIBILITY_GUIDE.md) for model-specific details.
 
 ### Step 2: Run the Start Script
 
@@ -150,9 +166,21 @@ def create_my_module():
 
 Then run: `python seed_data.py`
 
-### Change AI Provider
+### Configure AI Providers
 
-In `backend/.env`, add OpenAI or Google keys and the system will use them as fallbacks.
+The system supports multiple AI providers with automatic fallback:
+
+**Supported Providers:**
+- **Anthropic Claude**: Most reliable, recommended for primary use
+- **OpenAI GPT**: All models (GPT-3.5, GPT-4, GPT-5, O1/O3 series)
+- **Google Gemini**: All Gemini models
+- **xAI Grok**: All Grok models
+
+**Configuration:**
+Add any/all provider keys to `backend/.env` for automatic fallback.
+
+**Model Compatibility:**
+System automatically handles model-specific quirks (temperature restrictions, token parameter variations, response formats). See [MULTI_MODEL_COMPATIBILITY_GUIDE.md](MULTI_MODEL_COMPATIBILITY_GUIDE.md) for details.
 
 ## Understanding Your Learning Data
 
